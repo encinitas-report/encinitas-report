@@ -6,6 +6,7 @@ import {
   CRIME_DATA, SCHOOL_DATA, INFRASTRUCTURE, ROAD_DATA, ZONING_DATA,
   TAX_DATA, OWNER_INSIGHTS, HOOD_INTEL, DATA_SOURCES
 } from "../data/intelligence";
+import { HeroCaptureForm, TabCaptureBanner, IntelCaptureModal } from "../components/IntelCapture";
 
 const Lbl = ({children,style:s}) => <div style={{fontSize:10,fontWeight:700,color:T.label,textTransform:"uppercase",letterSpacing:"1.2px",...s}}>{children}</div>;
 const Card = ({children,style:s,...r}) => <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,boxShadow:T.shadow,...s}} {...r}>{children}</div>;
@@ -50,11 +51,27 @@ function LockedCard({title,service,description,cta}) {
 }
 
 /* ══════ OVERVIEW TAB ══════ */
-function Overview() {
+function Overview({ onCapture }) {
   const liveSources = DATA_SOURCES.filter(s=>s.status==="live").length;
   const paidSources = DATA_SOURCES.filter(s=>s.status==="requires-subscription").length;
   return (
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      {/* ★ LEAD CAPTURE CARD */}
+      <Card className="glow-card" style={{
+        padding:"24px 28px",
+        background:"linear-gradient(135deg,#f0fdf4,#ecfdf5,#f0fdf4)",
+        border:`2px solid ${T.brand}33`,
+      }}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+          <span style={{fontSize:28}}>🔍</span>
+          <div>
+            <div style={{fontSize:18,fontWeight:900,color:T.text,letterSpacing:"-0.5px"}}>Get Your Property Intelligence Report</div>
+            <div style={{fontSize:13,color:T.sec}}>Flood zone, school path, zoning, STR eligibility — personalized for your address</div>
+          </div>
+        </div>
+        <HeroCaptureForm onResult={onCapture}/>
+      </Card>
+
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}} className="stats-4col">
         {[
           {l:"Live Sources",v:liveSources,s:`+ ${paidSources} premium`,c:T.brand},
@@ -474,9 +491,24 @@ function SourcesTab() {
    ══════════════════════════════════════ */
 export default function IntelHub() {
   const [tab, setTab] = useState("overview");
+  const [captureModal, setCaptureModal] = useState(null); // { address, neighborhood }
+
+  const handleCaptureResult = ({ address, neighborhood }) => {
+    setCaptureModal({ address, neighborhood });
+  };
 
   return (
     <div style={{maxWidth:1200,margin:"0 auto",padding:"32px 32px 60px"}}>
+      {/* CAPTURE MODAL */}
+      {captureModal && (
+        <IntelCaptureModal
+          address={captureModal.address}
+          neighborhood={captureModal.neighborhood}
+          onClose={()=>setCaptureModal(null)}
+          onComplete={(data)=>console.log("Lead captured:",data)}
+        />
+      )}
+
       {/* HERO */}
       <div className="hero-gradient tech-grid" style={{padding:"36px 32px",borderRadius:20,marginLeft:-32,marginRight:-32,marginTop:-32,paddingTop:48,marginBottom:24}}>
         <div style={{maxWidth:1200,margin:"0 auto"}}>
@@ -489,7 +521,13 @@ export default function IntelHub() {
           <p className="anim-up-d3" style={{fontSize:15,color:T.sec,marginTop:12,lineHeight:1.5,maxWidth:560}}>
             STR regulations, development projects, flood zones, crime stats, school ratings, infrastructure, and zoning — sourced from SANDAG, FEMA, GreatSchools, and City of Encinitas public records.
           </p>
-          <div className="anim-up-d4" style={{marginTop:12,fontSize:12,color:T.muted}}>
+
+          {/* ★ PHASE 1: LEAD CAPTURE CTA */}
+          <div className="anim-up-d4">
+            <HeroCaptureForm onResult={handleCaptureResult} />
+          </div>
+
+          <div className="anim-up-d5" style={{marginTop:12,fontSize:12,color:T.muted}}>
             David Rose · HomeSmart Realty West · TheEncinitasReport.com
           </div>
         </div>
@@ -509,7 +547,13 @@ export default function IntelHub() {
 
       {/* TAB CONTENT */}
       <div key={tab} className="anim-fade">
-        {tab==="overview" && <Overview/>}
+        {tab!=="overview" && tab!=="sources" && (
+          <TabCaptureBanner
+            tabName={TABS.find(t=>t.id===tab)?.label || tab}
+            onResult={handleCaptureResult}
+          />
+        )}
+        {tab==="overview" && <Overview onCapture={handleCaptureResult}/>}
         {tab==="str" && <STRTab/>}
         {tab==="sb9" && <SB9Tab/>}
         {tab==="foreclosure" && <ForeclosureTab/>}
